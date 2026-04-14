@@ -1,16 +1,38 @@
-
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useState, useCallback } from 'react';
-import { ArrowLeft, Heart, Gift, History, X } from 'lucide-react';
+import { ArrowLeft, Heart, Gift, History, X, Share2, Star } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { BlindBoxItem } from '@/types';
 
 export default function BlindBox() {
   const navigate = useNavigate();
-  const { blindBox, openBlindBox, toggleFavorite, clearCurrentItem } = useAppStore();
+  const { blindBox, openBlindBox, toggleFavorite, clearCurrentItem, generateShareText, quiz } = useAppStore();
   const [showFavorites, setShowFavorites] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showMessage, setShowMessage] = useState<string | null>(null);
+
+  const handleShare = useCallback((item: BlindBoxItem) => {
+    const text = generateShareText('blindBox', {
+      content: item.content
+    });
+    
+    if (navigator.share) {
+      navigator.share({ text });
+    } else {
+      navigator.clipboard.writeText(text);
+      setShowMessage('分享文案已复制到剪贴板！');
+      setTimeout(() => setShowMessage(null), 2000);
+    }
+  }, [generateShareText]);
+
+  const handleOpenBlindBox = useCallback(() => {
+    const success = openBlindBox();
+    if (!success) {
+      setShowMessage('积分不足，无法开启盲盒！');
+      setTimeout(() => setShowMessage(null), 2000);
+    }
+  }, [openBlindBox]);
 
   const getRarityColor = useCallback((rarity: string) => {
     switch (rarity) {
@@ -36,7 +58,23 @@ export default function BlindBox() {
       case 'compliment': return '💕';
       case 'challenge': return '🎯';
       case 'fortune': return '🍀';
+      case 'campus_tag': return '🏷️';
+      case 'friend_blessing': return '🎊';
+      case 'meme': return '😜';
       default: return '🎁';
+    }
+  }, []);
+
+  const getTypeText = useCallback((type: string) => {
+    switch (type) {
+      case 'joke': return '笑话';
+      case 'compliment': return '赞美';
+      case 'challenge': return '挑战';
+      case 'fortune': return '运势';
+      case 'campus_tag': return '校园标签';
+      case 'friend_blessing': return '好友祝福';
+      case 'meme': return '表情包';
+      default: return '盲盒';
     }
   }, []);
 
@@ -61,34 +99,61 @@ export default function BlindBox() {
         )}
         <div className="flex items-center gap-3 mb-4">
           <span className="text-4xl">{item.emoji}</span>
-          <span className={`text-xs font-bold px-3 py-1.5 rounded-full bg-gradient-to-r ${getRarityColor(item.rarity)} text-white shadow`}>
-            {getRarityText(item.rarity)}
-          </span>
+          <div className="flex flex-col gap-1">
+            <span className={`text-xs font-bold px-3 py-1.5 rounded-full bg-gradient-to-r ${getRarityColor(item.rarity)} text-white shadow`}>
+              {getRarityText(item.rarity)}
+            </span>
+            <span className="text-xs text-gray-500 font-medium">{getTypeText(item.type)}</span>
+          </div>
         </div>
         <p className="text-gray-700 text-lg leading-relaxed mb-4">{item.content}</p>
         <div className="flex justify-between items-center pt-3 border-t border-gray-100">
           <span className="text-3xl">{getTypeEmoji(item.type)}</span>
-          {!showRemove && (
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => toggleFavorite(item)}
-              className={`p-3 rounded-full transition-all ${
-                blindBox.favorites.some(fav => fav.id === item.id)
-                  ? 'bg-red-100 text-red-500 shadow-md'
-                  : 'bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-500'
-              }`}
-            >
-              <Heart
-                size={24}
-                fill={blindBox.favorites.some(fav => fav.id === item.id) ? 'currentColor' : 'none'}
-              />
-            </motion.button>
-          )}
+          <div className="flex gap-2">
+            {!showRemove && (
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => handleShare(item)}
+                className="p-3 rounded-full bg-gradient-to-r from-accent-blue to-accent-purple text-white shadow-md"
+              >
+                <Share2 size={20} />
+              </motion.button>
+            )}
+            {!showRemove && (
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => toggleFavorite(item)}
+                className={`p-3 rounded-full transition-all ${
+                  blindBox.favorites.some(fav => fav.id === item.id)
+                    ? 'bg-red-100 text-red-500 shadow-md'
+                    : 'bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-500'
+                }`}
+              >
+                <Heart
+                  size={24}
+                  fill={blindBox.favorites.some(fav => fav.id === item.id) ? 'currentColor' : 'none'}
+                />
+              </motion.button>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>
-  ), [blindBox.favorites, getRarityColor, getRarityText, getTypeEmoji, toggleFavorite]);
+  ), [blindBox.favorites, getRarityColor, getRarityText, getTypeEmoji, getTypeText, toggleFavorite, handleShare]);
+
+  // 计算每日剩余开启次数
+  const getRemainingOpens = () => {
+    const lastOpenedDate = new Date(blindBox.lastOpened).toDateString();
+    const today = new Date().toDateString();
+    if (lastOpenedDate !== today) {
+      return 1; // 每日1次免费开启
+    }
+    return Math.max(0, 1 - blindBox.dailyOpens);
+  };
+
+  const remainingOpens = getRemainingOpens();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-accent-blue/20 via-secondary/20 to-accent-purple/20 p-4">
@@ -147,6 +212,17 @@ export default function BlindBox() {
             </motion.button>
           </div>
         </div>
+
+        {showMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-4 bg-gradient-to-r from-accent-yellow/50 to-accent-orange/30 rounded-2xl p-4 border-2 border-accent-yellow/30 text-center"
+          >
+            <p className="text-gray-700 font-medium">{showMessage}</p>
+          </motion.div>
+        )}
 
         <AnimatePresence mode="wait">
           {showFavorites ? (
@@ -230,9 +306,26 @@ export default function BlindBox() {
                 <h1 className="font-display text-3xl md:text-4xl text-gray-800 mb-3">
                   校园盲盒
                 </h1>
-                <p className="text-gray-600 text-lg mb-10">
+                <p className="text-gray-600 text-lg mb-6">
                   点击盲盒，开启你的惊喜！🎁
                 </p>
+                
+                <div className="flex justify-center items-center gap-4 mb-8">
+                  <div className="bg-gradient-to-r from-accent-yellow/50 to-accent-orange/30 rounded-2xl p-4 border-2 border-accent-yellow/30">
+                    <div className="flex items-center gap-2">
+                      <Star size={20} className="text-yellow-500" />
+                      <span className="font-bold text-gray-800">每日免费开启</span>
+                    </div>
+                    <p className="text-gray-700">剩余 {remainingOpens} 次</p>
+                  </div>
+                  <div className="bg-gradient-to-r from-secondary/50 to-accent-blue/30 rounded-2xl p-4 border-2 border-secondary/30">
+                    <div className="flex items-center gap-2">
+                      <Star size={20} className="text-secondary" />
+                      <span className="font-bold text-gray-800">积分</span>
+                    </div>
+                    <p className="text-gray-700">{quiz.积分} 分</p>
+                  </div>
+                </div>
 
                 <AnimatePresence mode="wait">
                   {blindBox.currentItem ? (
@@ -257,7 +350,7 @@ export default function BlindBox() {
                           whileTap={{ scale: 0.95 }}
                           onClick={() => {
                             clearCurrentItem();
-                            openBlindBox();
+                            handleOpenBlindBox();
                           }}
                           className="px-6 py-4 bg-gradient-to-r from-primary to-accent-pink text-white rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"
                         >
@@ -274,7 +367,7 @@ export default function BlindBox() {
                       <motion.button
                         whileHover={!blindBox.isOpening ? { scale: 1.15, rotate: 5 } : {}}
                         whileTap={!blindBox.isOpening ? { scale: 0.9 } : {}}
-                        onClick={openBlindBox}
+                        onClick={handleOpenBlindBox}
                         disabled={blindBox.isOpening}
                         className="relative group"
                       >
@@ -319,30 +412,32 @@ export default function BlindBox() {
                     transition={{ delay: 0.5 }}
                     className="mt-8 text-gray-500 text-lg"
                   >
-                    点击盲盒开启惊喜！
+                    {remainingOpens > 0 ? '点击盲盒开启免费惊喜！' : '消耗20积分开启盲盒！'}
                   </motion.p>
                 )}
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                {[
-                  { emoji: '😂', text: '笑话' },
-                  { emoji: '💕', text: '赞美' },
-                  { emoji: '🎯', text: '挑战' },
-                  { emoji: '🍀', text: '运势' }
-                ].map((item, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 * i }}
-                    whileHover={{ y: -5, scale: 1.05 }}
-                    className="bg-white/90 backdrop-blur-lg rounded-2xl p-5 shadow-lg card-shadow"
-                  >
-                    <div className="text-4xl mb-2">{item.emoji}</div>
-                    <p className="text-gray-700 font-medium">{item.text}</p>
-                  </motion.div>
-                ))}
+                {
+                  [
+                    { emoji: '🏷️', text: '校园标签' },
+                    { emoji: '🎊', text: '好友祝福' },
+                    { emoji: '😜', text: '表情包' },
+                    { emoji: '🎁', text: '更多惊喜' }
+                  ].map((item, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 * i }}
+                      whileHover={{ y: -5, scale: 1.05 }}
+                      className="bg-white/90 backdrop-blur-lg rounded-2xl p-5 shadow-lg card-shadow"
+                    >
+                      <div className="text-4xl mb-2">{item.emoji}</div>
+                      <p className="text-gray-700 font-medium">{item.text}</p>
+                    </motion.div>
+                  ))
+                }
               </div>
             </motion.div>
           )}

@@ -1,8 +1,7 @@
-
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useState, useCallback } from 'react';
-import { ArrowLeft, Trophy, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Trophy, RotateCcw, Star, Target, Zap } from 'lucide-react';
 import { useAppStore } from '@/store';
 
 const Confetti = ({ onComplete }: { onComplete: () => void }) => {
@@ -46,16 +45,18 @@ const Confetti = ({ onComplete }: { onComplete: () => void }) => {
 
 export default function Quiz() {
   const navigate = useNavigate();
-  const { quiz, initQuiz, answerQuestion, resetQuiz } = useAppStore();
+  const { quiz, initQuiz, answerQuestion, resetQuiz, setQuizMode } = useAppStore();
+  const user积分 = quiz.积分;
   const [showConfetti, setShowConfetti] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [showModeSelect, setShowModeSelect] = useState(true);
 
-  useEffect(() => {
-    if (quiz.questions.length === 0) {
-      initQuiz();
-    }
-  }, [quiz.questions.length, initQuiz]);
+  const handleSelectMode = useCallback((mode: 'single' | 'challenge') => {
+    setQuizMode(mode);
+    initQuiz(mode);
+    setShowModeSelect(false);
+  }, [setQuizMode, initQuiz]);
 
   const handleAnswer = useCallback((index: number) => {
     if (selectedAnswer !== null) return;
@@ -93,6 +94,81 @@ export default function Quiz() {
     },
     exit: { opacity: 0, x: 50, transition: { duration: 0.3 } }
   };
+
+  // 模式选择界面
+  if (showModeSelect) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-accent-blue/20 via-primary/20 to-accent-pink/20 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 100 }}
+          className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl p-8 max-w-md w-full text-center card-shadow"
+        >
+          <motion.div
+            animate={{ 
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0]
+            }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+            className="text-7xl mb-6"
+          >
+            🧠
+          </motion.div>
+          <h1 className="font-display text-3xl md:text-4xl text-gray-800 mb-3">
+            趣味答题
+          </h1>
+          <p className="text-gray-600 text-lg mb-8">
+            选择答题模式，开始挑战！
+          </p>
+          
+          <div className="space-y-4">
+            <motion.button
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleSelectMode('single')}
+              className="w-full py-5 bg-gradient-to-r from-primary to-accent-pink text-white rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transition-all"
+            >
+              <Target size={24} />
+              单题挑战
+              <span className="text-sm font-normal opacity-80">5题随机出题</span>
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleSelectMode('challenge')}
+              className="w-full py-5 bg-gradient-to-r from-secondary to-accent-blue text-white rounded-2xl font-bold text-lg flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transition-all"
+            >
+              <Zap size={24} />
+              闯关模式
+              <span className="text-sm font-normal opacity-80">3关递增难度</span>
+            </motion.button>
+            
+            <div className="mt-8 p-4 bg-gradient-to-r from-accent-yellow/50 to-accent-orange/30 rounded-2xl border-2 border-accent-yellow/30">
+              <div className="flex items-center gap-2 mb-2">
+                <Star size={20} className="text-yellow-500" />
+                <span className="font-bold text-gray-800">每日奖励</span>
+              </div>
+              <p className="text-gray-700 text-sm">
+                每日可免费答题5次，答对题目获得积分，积分可用于开启盲盒！
+              </p>
+            </div>
+            
+            <motion.button
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/')}
+              className="w-full py-4 bg-gray-100 text-gray-700 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-gray-200 transition-all"
+            >
+              <ArrowLeft size={20} />
+              返回首页
+            </motion.button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (quiz.questions.length === 0) {
     return (
@@ -142,6 +218,13 @@ export default function Quiz() {
               {quiz.score}/{quiz.questions.length}
             </p>
           </div>
+          
+          <div className="bg-gradient-to-r from-secondary to-accent-blue rounded-2xl p-6 mb-6 shadow-lg">
+            <p className="text-white text-lg mb-2">获得积分</p>
+            <p className="font-display text-5xl text-white">
+              +{quiz.score * 10}
+            </p>
+          </div>
 
           <div className="flex flex-col gap-3">
             <motion.button
@@ -149,6 +232,7 @@ export default function Quiz() {
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 resetQuiz();
+                setShowModeSelect(true);
               }}
               className="w-full py-4 bg-gradient-to-r from-primary to-accent-pink text-white rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"
             >
@@ -172,6 +256,7 @@ export default function Quiz() {
 
   const currentQuestion = quiz.questions[quiz.currentQuestion];
   const progress = ((quiz.currentQuestion + 1) / quiz.questions.length) * 100;
+  const currentLevel = Math.floor(quiz.currentQuestion / 5) + 1;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-accent-blue/20 via-primary/20 to-accent-pink/20 p-4">
@@ -184,22 +269,36 @@ export default function Quiz() {
           <motion.button
             whileHover={{ scale: 1.05, x: -3 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate('/')}
+            onClick={() => {
+              setShowModeSelect(true);
+            }}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-800 bg-white/70 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm"
           >
             <ArrowLeft size={24} />
-            <span className="font-medium">返回首页</span>
+            <span className="font-medium">返回模式选择</span>
           </motion.button>
         </motion.div>
 
         <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
-            <span className="font-bold text-gray-700 bg-white/70 backdrop-blur-sm px-4 py-2 rounded-xl">
-              第 {quiz.currentQuestion + 1}/{quiz.questions.length} 题
-            </span>
-            <span className="font-display text-2xl text-primary bg-white/70 backdrop-blur-sm px-4 py-2 rounded-xl">
-              {quiz.score} 分
-            </span>
+            <div className="flex gap-2">
+              <span className="font-bold text-gray-700 bg-white/70 backdrop-blur-sm px-4 py-2 rounded-xl">
+                第 {quiz.currentQuestion + 1}/{quiz.questions.length} 题
+              </span>
+              {quiz.mode === 'challenge' && (
+                <span className="font-bold text-secondary bg-white/70 backdrop-blur-sm px-4 py-2 rounded-xl">
+                  第 {currentLevel}/3 关
+                </span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <span className="font-display text-2xl text-primary bg-white/70 backdrop-blur-sm px-4 py-2 rounded-xl">
+                {quiz.score} 分
+              </span>
+              <span className="font-display text-2xl text-secondary bg-white/70 backdrop-blur-sm px-4 py-2 rounded-xl">
+                {user积分} 积分
+              </span>
+            </div>
           </div>
           <div className="h-4 bg-white/50 backdrop-blur-sm rounded-full overflow-hidden shadow-inner">
             <motion.div

@@ -1,23 +1,64 @@
-
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { useState, useCallback, useMemo } from 'react';
-import { ArrowLeft, RotateCcw } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import { ArrowLeft, RotateCcw, Share2, Copy, Users, Trophy, Zap } from 'lucide-react';
 import { mockChemistryQuestions } from '@/mockData';
 import { ChemistryQuestion } from '@/types';
+import { useAppStore } from '@/store';
 
 type TestMode = 'create' | 'join' | 'test' | 'result';
 
 export default function Chemistry() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { createChemistryTest, joinChemistryTest, submitChemistryAnswers, generateShareText } = useAppStore();
   const [mode, setMode] = useState<TestMode>('create');
   const [creatorName, setCreatorName] = useState('');
   const [participantName, setParticipantName] = useState('');
+  const [testId, setTestId] = useState('');
   const [questions] = useState<ChemistryQuestion[]>([...mockChemistryQuestions]);
   const [creatorAnswers, setCreatorAnswers] = useState<number[]>([]);
   const [participantAnswers, setParticipantAnswers] = useState<number[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [tempAnswer, setTempAnswer] = useState<number | null>(null);
+  const [showMessage, setShowMessage] = useState<string | null>(null);
+  const [testResults, setTestResults] = useState<Array<{name: string, score: number, percentage: number}>>([]);
+
+  // 检查URL中是否有testId参数
+  useEffect(() => {
+    const urlTestId = searchParams.get('testId');
+    if (urlTestId) {
+      setTestId(urlTestId);
+      setMode('join');
+    }
+  }, [searchParams]);
+
+  const handleShare = useCallback((type: 'invite' | 'result') => {
+    let text: string;
+    if (type === 'invite') {
+      text = `我在校园趣味互动网站创建了好友默契测试，邀请码：${testId}，快来测试我们的默契吧！\n\n链接：${window.location.origin}/chemistry?testId=${testId}`;
+    } else {
+      text = generateShareText('chemistry', {
+        friend: participantName,
+        percentage: testResults[0]?.percentage || 0
+      });
+    }
+    
+    if (navigator.share) {
+      navigator.share({ text });
+    } else {
+      navigator.clipboard.writeText(text);
+      setShowMessage(type === 'invite' ? '邀请链接已复制到剪贴板！' : '分享文案已复制到剪贴板！');
+      setTimeout(() => setShowMessage(null), 2000);
+    }
+  }, [testId, participantName, testResults, generateShareText]);
+
+  const handleCopyInvite = useCallback(() => {
+    const inviteText = `邀请码：${testId}\n链接：${window.location.origin}/chemistry?testId=${testId}`;
+    navigator.clipboard.writeText(inviteText);
+    setShowMessage('邀请码已复制到剪贴板！');
+    setTimeout(() => setShowMessage(null), 2000);
+  }, [testId]);
 
   const calculateScore = useCallback(() => {
     let score = 0;
@@ -68,32 +109,64 @@ export default function Chemistry() {
       setTempAnswer(null);
     } else {
       if (isCreatorPhase) {
+        // 创建测试并生成邀请码
+        const newTestId = createChemistryTest(creatorName);
+        setTestId(newTestId);
         setMode('join');
         setCurrentQuestion(0);
         setTempAnswer(null);
       } else {
+        // 提交答案并计算结果
+        submitChemistryAnswers(testId, participantName, participantAnswers);
+        
+        // 计算默契度
+        const score = calculateScore();
+        const percentage = Math.round((score / questions.length) * 100);
+        
+        // 模拟其他参与者的结果（实际项目中应该从服务器获取）
+        const mockResults = [
+          { name: participantName, score, percentage },
+          { name: '好友1', score: Math.floor(Math.random() * (questions.length + 1)), percentage: 0 },
+          { name: '好友2', score: Math.floor(Math.random() * (questions.length + 1)), percentage: 0 }
+        ];
+        
+        // 计算其他参与者的百分比
+        const processedResults = mockResults.map(result => ({
+          ...result,
+          percentage: Math.round((result.score / questions.length) * 100)
+        })).sort((a, b) => b.percentage - a.percentage);
+        
+        setTestResults(processedResults);
         setMode('result');
       }
     }
-  }, [tempAnswer, creatorAnswers, participantAnswers, currentQuestion, questions.length]);
+  }, [tempAnswer, creatorAnswers, participantAnswers, currentQuestion, questions.length, creatorName, testId, participantName, createChemistryTest, submitChemistryAnswers, calculateScore]);
 
   const handleParticipate = useCallback(() => {
     if (participantName.trim()) {
-      setParticipantAnswers([]);
-      setCurrentQuestion(0);
-      setTempAnswer(null);
-      setMode('test');
+      const success = joinChemistryTest(testId, participantName);
+      if (success) {
+        setParticipantAnswers([]);
+        setCurrentQuestion(0);
+        setTempAnswer(null);
+        setMode('test');
+      } else {
+        setShowMessage('测试不存在或已参与过！');
+        setTimeout(() => setShowMessage(null), 2000);
+      }
     }
-  }, [participantName]);
+  }, [participantName, testId, joinChemistryTest]);
 
   const handleReset = useCallback(() => {
     setMode('create');
     setCreatorName('');
     setParticipantName('');
+    setTestId('');
     setCreatorAnswers([]);
     setParticipantAnswers([]);
     setCurrentQuestion(0);
     setTempAnswer(null);
+    setTestResults([]);
   }, []);
 
   const score = useMemo(() => calculateScore(), [calculateScore]);
@@ -106,7 +179,7 @@ export default function Chemistry() {
     const offset = circumference - (progress / 100) * circumference;
     
     return (
-      <svg className="transform -rotate-90 w-48 h-48" viewBox="0 0 192 192">
+      <svg className="transform -rotate-90 w-48 h-48">
         <circle
           cx="96"
           cy="96"
@@ -127,7 +200,7 @@ export default function Chemistry() {
           className="text-primary"
           initial={{ strokeDasharray: circumference, strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 2, ease: 'easeOut' }}
+          transition={{ duration: 2, ease: "easeOut" as const }}
         />
       </svg>
     );
@@ -151,6 +224,17 @@ export default function Chemistry() {
             <span className="font-medium">返回首页</span>
           </motion.button>
         </motion.div>
+
+        {showMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="mb-4 bg-gradient-to-r from-accent-yellow/50 to-accent-orange/30 rounded-2xl p-4 border-2 border-accent-yellow/30 text-center"
+          >
+            <p className="text-gray-700 font-medium">{showMessage}</p>
+          </motion.div>
+        )}
 
         <AnimatePresence mode="wait">
           {mode === 'create' && (
@@ -206,7 +290,7 @@ export default function Chemistry() {
               initial={{ x: 50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -50, opacity: 0 }}
-              transition={{ duration: 0.4, ease: 'easeOut' }}
+              transition={{ duration: 0.4, ease: "easeOut" as const }}
               className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-xl p-6 md:p-8 card-shadow"
             >
               <div className="flex justify-between items-center mb-5">
@@ -223,7 +307,7 @@ export default function Chemistry() {
                   className="h-full bg-gradient-to-r from-primary via-accent-pink to-accent-purple"
                   initial={{ width: 0 }}
                   animate={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
-                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  transition={{ duration: 0.5, ease: "easeOut" as const }}
                 />
               </div>
 
@@ -267,7 +351,7 @@ export default function Chemistry() {
                   className="w-full py-4 bg-gradient-to-r from-primary to-accent-pink text-white rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all"
                 >
                   {currentQuestion === questions.length - 1 
-                    ? (creatorAnswers.length === 0 ? '邀请好友参与 👥' : '查看结果 🎉')
+                    ? (creatorAnswers.length === 0 ? '生成邀请码 👥' : '查看结果 🎉')
                     : '下一题 →'}
                 </motion.button>
               )}
@@ -295,15 +379,42 @@ export default function Chemistry() {
               <h2 className="font-display text-2xl md:text-3xl text-gray-800 mb-3">
                 {creatorName} 已创建好测试！
               </h2>
-              <p className="text-gray-600 text-lg mb-8">
-                现在轮到好友来回答了
+              <p className="text-gray-600 text-lg mb-6">
+                邀请好友参与测试，看看你们的默契度！
               </p>
+
+              <div className="bg-gradient-to-r from-accent-yellow/50 to-accent-orange/30 rounded-2xl p-4 mb-6 border-2 border-accent-yellow/30">
+                <p className="text-gray-700 font-medium mb-2">邀请码</p>
+                <div className="flex items-center gap-3 justify-center">
+                  <span className="font-display text-3xl tracking-widest text-primary">{testId}</span>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={handleCopyInvite}
+                    className="p-2 bg-primary/10 rounded-lg hover:bg-primary/20 transition-all"
+                  >
+                    <Copy size={20} className="text-primary" />
+                  </motion.button>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <motion.button
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleShare('invite')}
+                  className="w-full py-4 bg-gradient-to-r from-accent-blue to-accent-purple text-white rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"
+                >
+                  <Share2 size={20} />
+                  分享邀请链接
+                </motion.button>
+              </div>
               
               <input
                 type="text"
                 value={participantName}
                 onChange={(e) => setParticipantName(e.target.value)}
-                placeholder="输入好友的名字..."
+                placeholder="输入你的名字..."
                 className="w-full px-5 py-4 rounded-2xl border-3 border-gray-100 focus:border-secondary focus:outline-none text-lg transition-all bg-gray-50 focus:bg-white shadow-sm mb-4"
                 onKeyPress={(e) => e.key === 'Enter' && handleParticipate()}
                 autoFocus
@@ -363,29 +474,54 @@ export default function Chemistry() {
               </div>
               
               <div className="bg-gray-50 rounded-2xl p-6 mb-7">
-                <div className="flex justify-center items-center gap-5 mb-5">
-                  <div className="text-center">
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-primary to-accent-pink rounded-full flex items-center justify-center text-3xl md:text-4xl text-white mx-auto mb-3 shadow-lg">
-                      {creatorName[0]}
-                    </div>
-                    <p className="font-bold text-gray-700 text-lg">{creatorName}</p>
-                  </div>
-                  <div className="text-4xl md:text-5xl">❤️</div>
-                  <div className="text-center">
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-secondary to-accent-blue rounded-full flex items-center justify-center text-3xl md:text-4xl text-white mx-auto mb-3 shadow-lg">
-                      {participantName[0]}
-                    </div>
-                    <p className="font-bold text-gray-700 text-lg">{participantName}</p>
-                  </div>
+                <h3 className="font-display text-xl text-gray-800 mb-4 flex items-center gap-2">
+                  <Trophy size={24} className="text-yellow-500" />
+                  默契排行榜
+                </h3>
+                <div className="space-y-3">
+                  {testResults.map((result, index) => (
+                    <motion.div
+                      key={result.name}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1 }}
+                      className={`flex justify-between items-center p-3 rounded-xl transition-all ${
+                        index === 0 ? 'bg-gradient-to-r from-yellow-100 to-orange-100 border-2 border-yellow-200' :
+                        index === 1 ? 'bg-gradient-to-r from-gray-100 to-slate-100 border-2 border-gray-200' :
+                        'bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={`font-bold text-lg ${
+                          index === 0 ? 'text-yellow-600' :
+                          index === 1 ? 'text-gray-600' :
+                          'text-amber-600'
+                        }`}>
+                          {index + 1}. {result.name}
+                        </span>
+                      </div>
+                      <span className={`font-display text-xl font-bold ${
+                        index === 0 ? 'text-yellow-600' :
+                        index === 1 ? 'text-gray-600' :
+                        'text-amber-600'
+                      }`}>
+                        {result.percentage}%
+                      </span>
+                    </motion.div>
+                  ))}
                 </div>
-                
-                <p className="text-gray-600 text-lg">
-                  你们答对了 <span className="font-display text-2xl md:text-3xl text-primary">{score}</span> 题，
-                  共 <span className="font-display text-xl md:text-2xl">{questions.length}</span> 题
-                </p>
               </div>
               
               <div className="space-y-4">
+                <motion.button
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleShare('result')}
+                  className="w-full py-4 bg-gradient-to-r from-accent-blue to-accent-purple text-white rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"
+                >
+                  <Share2 size={20} />
+                  分享结果
+                </motion.button>
                 <motion.button
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95 }}

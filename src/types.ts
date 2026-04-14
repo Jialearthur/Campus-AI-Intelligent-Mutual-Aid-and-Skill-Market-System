@@ -15,11 +15,16 @@ export interface QuizState {
   answers: number[];
   questions: Question[];
   isFinished: boolean;
+  mode: 'single' | 'challenge';
+  level: number;
+ 积分: number;
+  dailyAttempts: number;
+  lastPlayed: number;
 }
 
 export interface BlindBoxItem {
   id: string;
-  type: 'joke' | 'compliment' | 'challenge' | 'fortune';
+  type: 'joke' | 'compliment' | 'challenge' | 'fortune' | 'campus_tag' | 'friend_blessing' | 'meme';
   content: string;
   emoji: string;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
@@ -30,6 +35,8 @@ export interface BlindBoxState {
   favorites: BlindBoxItem[];
   isOpening: boolean;
   currentItem: BlindBoxItem | null;
+  dailyOpens: number;
+  lastOpened: number;
 }
 
 export interface ChemistryQuestion {
@@ -44,6 +51,7 @@ export interface ChemistryTest {
   questions: ChemistryQuestion[];
   creatorAnswers: number[];
   createdAt: number;
+  participants: ChemistryResult[];
 }
 
 export interface ChemistryResult {
@@ -52,4 +60,12 @@ export interface ChemistryResult {
   answers: number[];
   score: number;
   percentage: number;
+  submittedAt: number;
+}
+
+export interface UserState {
+  nickname: string;
+  highScore: number;
+  totalGames: number;
+  totalScore: number;
 }
