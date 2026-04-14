@@ -1,4 +1,3 @@
-
 ## 1. Architecture Design
 ```mermaid
 graph TB
@@ -58,6 +57,31 @@ interface QuizState {
   answers: number[];
   questions: Question[];
   isFinished: boolean;
+  mode: 'single' | 'challenge';
+  level: number;
+  积分: number;
+  dailyAttempts: number;
+  lastPlayed: number;
+  startTime: number;
+  endTime: number;
+}
+
+interface LeaderboardEntry {
+  id: string;
+  nickname: string;
+  积分: number;
+  rank: number;
+}
+
+interface QuizReport {
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  accuracy: number;
+  timeSpent: number;
+  积分奖励: number;
+  beatPercentage: number;
+ 评语: string;
 }
 ```
 
@@ -65,16 +89,20 @@ interface QuizState {
 ```typescript
 interface BlindBoxItem {
   id: string;
-  type: 'joke' | 'compliment' | 'challenge' | 'fortune';
+  type: 'joke' | 'compliment' | 'challenge' | 'fortune' | 'campus_tag' | 'friend_blessing' | 'meme' | 'points_reward';
   content: string;
   emoji: string;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  customContent?: string;
 }
 
 interface BlindBoxState {
   history: BlindBoxItem[];
   favorites: BlindBoxItem[];
   isOpening: boolean;
+  currentItem: BlindBoxItem | null;
+  dailyOpens: number;
+  lastOpened: number;
 }
 ```
 
@@ -92,6 +120,7 @@ interface ChemistryTest {
   questions: ChemistryQuestion[];
   creatorAnswers: number[];
   createdAt: number;
+  participants: ChemistryResult[];
 }
 
 interface ChemistryResult {
@@ -100,6 +129,7 @@ interface ChemistryResult {
   answers: number[];
   score: number;
   percentage: number;
+  submittedAt: number;
 }
 ```
 
@@ -117,11 +147,25 @@ interface ChemistryResult {
 - 答题进度状态
 - 盲盒历史和收藏
 - 默契测试创建和参与状态
+- 积分系统和排行榜状态
 
 ### 5.3 本地存储
 - 保存用户历史答题记录
 - 保存盲盒收藏
 - 保存临时昵称
+- 保存积分和排行榜数据
+
+### 5.4 积分系统
+- 答题获得积分（答对1题得10积分）
+- 闯关成功额外奖励50积分
+- 积分用于开启盲盒
+- 积分排行榜功能
+
+### 5.5 答题报告系统
+- 计算正确率
+- 统计用时
+- 计算击败人数百分比
+- 生成专属评语
 
 ## 6. Mock Data
 
@@ -145,6 +189,15 @@ const mockQuestions: Question[] = [
     explanation: '吃东西的声音在安静的图书馆里格外明显！',
     category: 'funny',
     difficulty: 'easy'
+  },
+  {
+    id: '3',
+    question: '以下哪个是计算机中常用的进制？',
+    options: ['十进制', '二进制', '八进制', '以上都是'],
+    correctAnswer: 3,
+    explanation: '计算机中常用的进制包括十进制、二进制和八进制！',
+    category: 'knowledge',
+    difficulty: 'medium'
   }
 ];
 ```
@@ -172,6 +225,58 @@ const mockBlindBoxItems: BlindBoxItem[] = [
     content: '好运即将降临，准备好迎接惊喜吧！',
     emoji: '🍀',
     rarity: 'epic'
+  },
+  {
+    id: '4',
+    type: 'campus_tag',
+    content: '校园干饭人',
+    emoji: '🍔',
+    rarity: 'common'
+  },
+  {
+    id: '5',
+    type: 'friend_blessing',
+    content: '愿你的大学生活充满快乐和收获！',
+    emoji: '🎓',
+    rarity: 'rare'
+  },
+  {
+    id: '6',
+    type: 'meme',
+    content: '大学生的日常：上课、干饭、追剧、熬夜赶作业',
+    emoji: '😂',
+    rarity: 'common'
+  },
+  {
+    id: '7',
+    type: 'points_reward',
+    content: '恭喜获得20积分奖励！',
+    emoji: '🎁',
+    rarity: 'epic'
+  }
+];
+```
+
+### 6.3 排行榜数据示例
+```typescript
+const mockLeaderboard: LeaderboardEntry[] = [
+  {
+    id: '1',
+    nickname: '学霸一号',
+    积分: 1250,
+    rank: 1
+  },
+  {
+    id: '2',
+    nickname: '答题小能手',
+    积分: 980,
+    rank: 2
+  },
+  {
+    id: '3',
+    nickname: '校园达人',
+    积分: 850,
+    rank: 3
   }
 ];
 ```

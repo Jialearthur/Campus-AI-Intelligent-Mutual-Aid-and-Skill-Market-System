@@ -1,22 +1,29 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useState, useCallback } from 'react';
-import { ArrowLeft, Heart, Gift, History, X, Share2, Star } from 'lucide-react';
+import { ArrowLeft, Heart, Gift, History, X, Share2, Star, Edit, MessageCircle, MessageSquare, Smile, Twitter } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { BlindBoxItem } from '@/types';
 
 export default function BlindBox() {
   const navigate = useNavigate();
-  const { blindBox, openBlindBox, toggleFavorite, clearCurrentItem, generateShareText, quiz } = useAppStore();
+  const { blindBox, openBlindBox, toggleFavorite, clearCurrentItem, generateShareText, quiz, customizeBlindBoxItem } = useAppStore();
   const [showFavorites, setShowFavorites] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showMessage, setShowMessage] = useState<string | null>(null);
+  const [showCustomize, setShowCustomize] = useState(false);
+  const [customContent, setCustomContent] = useState('');
 
   const handleShare = useCallback((item: BlindBoxItem) => {
     const text = generateShareText('blindBox', {
       content: item.content
     });
     
+    // 模拟社交平台分享
+    setShowMessage('分享选项已打开！');
+    setTimeout(() => setShowMessage(null), 2000);
+    
+    // 实际项目中可以实现真实的分享功能
     if (navigator.share) {
       navigator.share({ text });
     } else {
@@ -25,6 +32,43 @@ export default function BlindBox() {
       setTimeout(() => setShowMessage(null), 2000);
     }
   }, [generateShareText]);
+  
+  const handleSocialShare = useCallback((platform: string, item: BlindBoxItem) => {
+    const text = generateShareText('blindBox', {
+      content: item.content
+    });
+    
+    // 模拟不同平台的分享
+    switch (platform) {
+      case 'wechat':
+        setShowMessage('微信分享已打开！');
+        break;
+      case 'qq':
+        setShowMessage('QQ分享已打开！');
+        break;
+      case 'twitter':
+        setShowMessage('Twitter分享已打开！');
+        break;
+      default:
+        break;
+    }
+    
+    setTimeout(() => setShowMessage(null), 2000);
+  }, [generateShareText]);
+  
+  const handleCustomize = useCallback((item: BlindBoxItem) => {
+    setShowCustomize(true);
+  }, []);
+  
+  const handleSaveCustomContent = useCallback(() => {
+    if (customContent.trim()) {
+      customizeBlindBoxItem(customContent.trim());
+      setShowCustomize(false);
+      setCustomContent('');
+      setShowMessage('自定义内容已保存！');
+      setTimeout(() => setShowMessage(null), 2000);
+    }
+  }, [customContent, customizeBlindBoxItem]);
 
   const handleOpenBlindBox = useCallback(() => {
     const success = openBlindBox();
@@ -107,9 +151,24 @@ export default function BlindBox() {
           </div>
         </div>
         <p className="text-gray-700 text-lg leading-relaxed mb-4">{item.content}</p>
+        {item.customContent && (
+          <div className="bg-gradient-to-r from-accent-blue/20 to-accent-purple/20 rounded-xl p-3 mb-4 border-2 border-accent-blue/30">
+            <p className="text-gray-700 italic">{item.customContent}</p>
+          </div>
+        )}
         <div className="flex justify-between items-center pt-3 border-t border-gray-100">
           <span className="text-3xl">{getTypeEmoji(item.type)}</span>
           <div className="flex gap-2">
+            {!showRemove && (
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => handleCustomize(item)}
+                className="p-3 rounded-full bg-gradient-to-r from-secondary to-accent-blue text-white shadow-md"
+              >
+                <Edit size={20} />
+              </motion.button>
+            )}
             {!showRemove && (
               <motion.button
                 whileHover={{ scale: 1.1 }}
@@ -141,7 +200,7 @@ export default function BlindBox() {
         </div>
       </div>
     </motion.div>
-  ), [blindBox.favorites, getRarityColor, getRarityText, getTypeEmoji, getTypeText, toggleFavorite, handleShare]);
+  ), [blindBox.favorites, getRarityColor, getRarityText, getTypeEmoji, getTypeText, toggleFavorite, handleShare, handleCustomize]);
 
   // 计算每日剩余开启次数
   const getRemainingOpens = () => {
@@ -223,6 +282,94 @@ export default function BlindBox() {
             <p className="text-gray-700 font-medium">{showMessage}</p>
           </motion.div>
         )}
+
+        {/* 自定义内容输入框 */}
+        <AnimatePresence>
+          {showCustomize && blindBox.currentItem && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-xl p-6 mb-6 card-shadow"
+            >
+              <h2 className="font-display text-2xl text-gray-800 mb-4 flex items-center gap-2">
+                <Edit size={24} />
+                自定义内容
+              </h2>
+              <textarea
+                value={customContent}
+                onChange={(e) => setCustomContent(e.target.value)}
+                placeholder="输入你想添加的自定义内容..."
+                className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-primary focus:outline-none text-gray-700 resize-none h-32"
+              />
+              <div className="flex gap-3 mt-4">
+                <motion.button
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowCustomize(false)}
+                  className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-2xl font-bold text-lg hover:bg-gray-200 transition-all"
+                >
+                  取消
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleSaveCustomContent}
+                  disabled={!customContent.trim()}
+                  className="flex-1 py-3 bg-gradient-to-r from-primary to-accent-pink text-white rounded-2xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all"
+                >
+                  保存
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 社交平台分享选项 */}
+        <AnimatePresence>
+          {blindBox.currentItem && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-xl p-6 mb-6 card-shadow"
+            >
+              <h2 className="font-display text-2xl text-gray-800 mb-4 flex items-center gap-2">
+                <Share2 size={24} />
+                分享到社交平台
+              </h2>
+              <div className="grid grid-cols-3 gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.1, y: -5 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleSocialShare('wechat', blindBox.currentItem!)}
+                  className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-gradient-to-r from-green-400 to-green-600 text-white shadow-lg hover:shadow-xl transition-all"
+                >
+                  <MessageSquare size={32} />
+                  <span className="font-medium">微信</span>
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1, y: -5 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleSocialShare('qq', blindBox.currentItem!)}
+                  className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-gradient-to-r from-blue-400 to-blue-600 text-white shadow-lg hover:shadow-xl transition-all"
+                >
+                  <Smile size={32} />
+                  <span className="font-medium">QQ</span>
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1, y: -5 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleSocialShare('twitter', blindBox.currentItem!)}
+                  className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-gradient-to-r from-blue-400 to-cyan-400 text-white shadow-lg hover:shadow-xl transition-all"
+                >
+                  <Twitter size={32} />
+                  <span className="font-medium">Twitter</span>
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence mode="wait">
           {showFavorites ? (
@@ -412,7 +559,7 @@ export default function BlindBox() {
                     transition={{ delay: 0.5 }}
                     className="mt-8 text-gray-500 text-lg"
                   >
-                    {remainingOpens > 0 ? '点击盲盒开启免费惊喜！' : '消耗20积分开启盲盒！'}
+                    {remainingOpens > 0 ? '点击盲盒开启免费惊喜！' : '消耗30积分开启盲盒！'}
                   </motion.p>
                 )}
               </div>

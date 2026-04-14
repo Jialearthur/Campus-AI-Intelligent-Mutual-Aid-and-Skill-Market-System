@@ -1,4 +1,4 @@
-import { Question, BlindBoxItem, ChemistryQuestion } from './types';
+import { Question, BlindBoxItem, ChemistryQuestion, LeaderboardEntry } from './types';
 
 // 生成100+道校园相关题目
 export const mockQuestions: Question[] = [
@@ -483,3 +483,17 @@ export const shareTemplates = {
     '默契大挑战！我和{friend}的默契分数是{percentage}%！🤝'
   ]
 };
+
+// 模拟排行榜数据
+export const mockLeaderboard: LeaderboardEntry[] = [
+  { id: '1', nickname: '学霸一号', 积分: 1250, rank: 1 },
+  { id: '2', nickname: '答题小能手', 积分: 980, rank: 2 },
+  { id: '3', nickname: '校园达人', 积分: 850, rank: 3 },
+  { id: '4', nickname: '知识渊博', 积分: 720, rank: 4 },
+  { id: '5', nickname: '答题王者', 积分: 650, rank: 5 },
+  { id: '6', nickname: '校园学霸', 积分: 580, rank: 6 },
+  { id: '7', nickname: '聪明伶俐', 积分: 520, rank: 7 },
+  { id: '8', nickname: '答题高手', 积分: 480, rank: 8 },
+  { id: '9', nickname: '知识储备', 积分: 420, rank: 9 },
+  { id: '10', nickname: '学习委员', 积分: 380, rank: 10 }
+];

@@ -20,14 +20,35 @@ export interface QuizState {
  积分: number;
   dailyAttempts: number;
   lastPlayed: number;
+  startTime: number;
+  endTime: number;
+}
+
+export interface LeaderboardEntry {
+  id: string;
+  nickname: string;
+  积分: number;
+  rank: number;
+}
+
+export interface QuizReport {
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  accuracy: number;
+  timeSpent: number;
+  积分奖励: number;
+  beatPercentage: number;
+ 评语: string;
 }
 
 export interface BlindBoxItem {
   id: string;
-  type: 'joke' | 'compliment' | 'challenge' | 'fortune' | 'campus_tag' | 'friend_blessing' | 'meme';
+  type: 'joke' | 'compliment' | 'challenge' | 'fortune' | 'campus_tag' | 'friend_blessing' | 'meme' | 'points_reward';
   content: string;
   emoji: string;
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  customContent?: string;
 }
 
 export interface BlindBoxState {

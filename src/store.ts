@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Question, BlindBoxItem, QuizState, BlindBoxState, ChemistryTest, ChemistryResult, UserState } from './types';
-import { mockQuestions, mockBlindBoxItems, shareTemplates } from './mockData';
+import { Question, BlindBoxItem, QuizState, BlindBoxState, ChemistryTest, ChemistryResult, UserState, LeaderboardEntry, QuizReport } from './types';
+import { mockQuestions, mockBlindBoxItems, shareTemplates, mockLeaderboard } from './mockData';
 
 type QuizMode = 'single' | 'challenge';
 
@@ -10,13 +10,16 @@ interface AppState {
   user: UserState;
   
   // 答题状态
-  quiz: QuizState & { mode: QuizMode; level: number; 积分: number; dailyAttempts: number; lastPlayed: number };
+  quiz: QuizState & { mode: QuizMode; level: number; 积分: number; dailyAttempts: number; lastPlayed: number; startTime: number; endTime: number };
   
   // 盲盒状态
   blindBox: BlindBoxState & { dailyOpens: number; lastOpened: number };
   
   // 默契测试状态
   chemistryTests: ChemistryTest[];
+  
+  // 排行榜状态
+  leaderboard: LeaderboardEntry[];
   
   // 用户信息
   nickname: string;
@@ -27,11 +30,14 @@ interface AppState {
   initQuiz: (mode?: QuizMode) => void;
   answerQuestion: (answerIndex: number) => void;
   resetQuiz: () => void;
+  generateQuizReport: () => QuizReport;
+  updateLeaderboard: () => void;
   
   // 盲盒相关方法
   openBlindBox: () => boolean;
   toggleFavorite: (item: BlindBoxItem) => void;
   clearCurrentItem: () => void;
+  customizeBlindBoxItem: (content: string) => void;
   
   // 默契测试相关方法
   createChemistryTest: (creatorName: string) => string;
@@ -69,8 +75,12 @@ export const useAppStore = create<AppState>()(
         level: 1,
         积分: 0,
         dailyAttempts: 0,
-        lastPlayed: 0
+        lastPlayed: 0,
+        startTime: 0,
+        endTime: 0
       },
+      
+      leaderboard: mockLeaderboard,
       
       blindBox: {
         history: [],
@@ -146,7 +156,9 @@ export const useAppStore = create<AppState>()(
             level: 1,
             积分: quiz.积分,
             dailyAttempts: dailyAttempts + 1,
-            lastPlayed: now
+            lastPlayed: now,
+            startTime: now,
+            endTime: 0
           }
         });
       },
@@ -189,6 +201,7 @@ export const useAppStore = create<AppState>()(
         const newHighScore = Math.max(user.highScore, newScore);
         const newTotalGames = isFinished ? user.totalGames + 1 : user.totalGames;
         const newTotalScore = isFinished ? user.totalScore + newScore : user.totalScore;
+        const endTime = isFinished ? Date.now() : 0;
         
         set({
           quiz: {
@@ -198,7 +211,8 @@ export const useAppStore = create<AppState>()(
             answers: newAnswers,
             isFinished,
             level: newLevel,
-            积分: new积分
+            积分: new积分,
+            endTime
           },
           user: {
             ...user,
@@ -207,6 +221,11 @@ export const useAppStore = create<AppState>()(
             totalScore: newTotalScore
           }
         });
+        
+        // 答题完成后更新排行榜
+        if (isFinished) {
+          get().updateLeaderboard();
+        }
       },
       
       // 重置答题
@@ -231,11 +250,11 @@ export const useAppStore = create<AppState>()(
         // 检查是否有免费开启次数
         if (dailyOpens >= 1) {
           // 需要消耗积分开启
-          if (quiz.积分 < 20) {
+          if (quiz.积分 < 30) {
             return false; // 积分不足
           }
           // 消耗积分
-          get().use积分(20);
+          get().use积分(30);
         }
         
         set({ blindBox: { ...blindBox, isOpening: true } });
@@ -274,6 +293,95 @@ export const useAppStore = create<AppState>()(
       // 清除当前盲盒内容
       clearCurrentItem: () => {
         set({ blindBox: { ...get().blindBox, currentItem: null } });
+      },
+      
+      // 自定义盲盒内容
+      customizeBlindBoxItem: (content: string) => {
+        const { blindBox } = get();
+        if (blindBox.currentItem) {
+          const updatedItem = {
+            ...blindBox.currentItem,
+            customContent: content
+          };
+          set({
+            blindBox: {
+              ...blindBox,
+              currentItem: updatedItem,
+              history: [updatedItem, ...blindBox.history].slice(0, 20)
+            }
+          });
+        }
+      },
+      
+      // 生成答题报告
+      generateQuizReport: (): QuizReport => {
+        const { quiz, nickname } = get();
+        const correctAnswers = quiz.score;
+        const totalQuestions = quiz.questions.length;
+        const accuracy = Math.round((correctAnswers / totalQuestions) * 100);
+        const timeSpent = (quiz.endTime - quiz.startTime) / 1000;
+        const 积分奖励 = correctAnswers * 10 + (quiz.mode === 'challenge' && quiz.level > 3 ? 50 : 0);
+        
+        // 模拟击败人数百分比
+        const beatPercentage = Math.floor(Math.random() * 101);
+        
+        // 生成评语
+        let 评语 = '';
+        if (accuracy === 100) {
+          评语 = '你简直是答题天才！所有题目都答对了，太厉害了！';
+        } else if (accuracy >= 80) {
+          评语 = '太棒了！你答对了大部分题目，继续保持！';
+        } else if (accuracy >= 60) {
+          评语 = '不错哦！你已经掌握了一些知识，继续加油！';
+        } else {
+          评语 = '别灰心，多练习几次，你会越来越厉害的！';
+        }
+        
+        return {
+          score: quiz.score,
+          totalQuestions,
+          correctAnswers,
+          accuracy,
+          timeSpent,
+          积分奖励,
+          beatPercentage,
+          评语
+        };
+      },
+      
+      // 更新排行榜
+      updateLeaderboard: () => {
+        const { leaderboard, nickname, quiz } = get();
+        
+        // 检查用户是否已经在排行榜中
+        const existingIndex = leaderboard.findIndex(entry => entry.nickname === nickname);
+        
+        if (existingIndex >= 0) {
+          // 更新现有记录
+          const updatedLeaderboard = [...leaderboard];
+          updatedLeaderboard[existingIndex].积分 = quiz.积分;
+          // 重新排序
+          updatedLeaderboard.sort((a, b) => b.积分 - a.积分);
+          // 更新排名
+          updatedLeaderboard.forEach((entry, index) => {
+            entry.rank = index + 1;
+          });
+          set({ leaderboard: updatedLeaderboard.slice(0, 50) });
+        } else {
+          // 添加新记录
+          const newEntry: LeaderboardEntry = {
+            id: Date.now().toString(),
+            nickname,
+            积分: quiz.积分,
+            rank: leaderboard.length + 1
+          };
+          const updatedLeaderboard = [...leaderboard, newEntry].sort((a, b) => b.积分 - a.积分);
+          // 更新排名
+          updatedLeaderboard.forEach((entry, index) => {
+            entry.rank = index + 1;
+          });
+          set({ leaderboard: updatedLeaderboard.slice(0, 50) });
+        }
       },
       
       // 创建默契测试
