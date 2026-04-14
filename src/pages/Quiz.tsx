@@ -1,9 +1,48 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { ArrowLeft, Trophy, RotateCcw } from 'lucide-react';
 import { useAppStore } from '@/store';
+
+const Confetti = ({ onComplete }: { onComplete: () => void }) => {
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 2000);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-50">
+      {[...Array(30)].map((_, i) => (
+        <motion.div
+          key={i}
+          initial={{
+            x: '50%',
+            y: '100%',
+            scale: 0,
+            rotate: Math.random() * 360,
+            opacity: 1
+          }}
+          animate={{
+            x: `${10 + Math.random() * 80}%`,
+            y: '-10%',
+            scale: 1,
+            rotate: Math.random() * 720,
+            opacity: 0
+          }}
+          transition={{
+            duration: 2 + Math.random(),
+            ease: 'easeOut'
+          }}
+          className="absolute text-3xl"
+          style={{ left: 0 }}
+        >
+          {['🎉', '🎊', '✨', '🌟', '💫', '🎈', '🌈'][Math.floor(Math.random() * 7)]}
+        </motion.div>
+      ))}
+    </div>
+  );
+};
 
 export default function Quiz() {
   const navigate = useNavigate();
@@ -18,7 +57,7 @@ export default function Quiz() {
     }
   }, [quiz.questions.length, initQuiz]);
 
-  const handleAnswer = (index: number) => {
+  const handleAnswer = useCallback((index: number) => {
     if (selectedAnswer !== null) return;
     setSelectedAnswer(index);
     setShowExplanation(true);
@@ -26,17 +65,16 @@ export default function Quiz() {
     const currentQ = quiz.questions[quiz.currentQuestion];
     if (index === currentQ.correctAnswer) {
       setShowConfetti(true);
-      setTimeout(() => setShowConfetti(false), 2000);
     }
-  };
+  }, [selectedAnswer, quiz.questions, quiz.currentQuestion]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (selectedAnswer !== null) {
       answerQuestion(selectedAnswer);
       setSelectedAnswer(null);
       setShowExplanation(false);
     }
-  };
+  }, [selectedAnswer, answerQuestion]);
 
   const getResultMessage = () => {
     const percentage = (quiz.score / quiz.questions.length) * 100;
@@ -51,15 +89,24 @@ export default function Quiz() {
     visible: { 
       opacity: 1, 
       x: 0,
-      transition: { duration: 0.5 }
+      transition: { duration: 0.4, ease: "easeOut" as const }
     },
-    exit: { opacity: 0, x: 50 }
+    exit: { opacity: 0, x: 50, transition: { duration: 0.3 } }
   };
 
   if (quiz.questions.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-        <div className="text-6xl animate-bounce">🧠</div>
+      <div className="min-h-screen bg-gradient-to-br from-accent-blue/20 via-primary/20 to-accent-pink/20 flex items-center justify-center">
+        <motion.div
+          animate={{ 
+            rotate: [0, 10, -10, 0],
+            scale: [1, 1.1, 1]
+          }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          className="text-7xl"
+        >
+          🧠
+        </motion.div>
       </div>
     );
   }
@@ -67,19 +114,29 @@ export default function Quiz() {
   if (quiz.isFinished) {
     const result = getResultMessage();
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/20 via-secondary/20 to-accent-pink/20 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-accent-blue/20 via-primary/20 to-accent-pink/20 flex items-center justify-center p-4">
         <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center"
+          initial={{ scale: 0.8, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 100 }}
+          className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl p-8 max-w-md w-full text-center card-shadow"
         >
-          <div className="text-7xl mb-4">{result.emoji}</div>
+          <motion.div
+            animate={{ 
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0]
+            }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+            className="text-7xl mb-4"
+          >
+            {result.emoji}
+          </motion.div>
           <h1 className="font-display text-3xl text-gray-800 mb-2">
             答题结束！
           </h1>
           <p className="text-xl text-gray-600 mb-6">{result.text}</p>
           
-          <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-6 mb-6">
+          <div className="bg-gradient-to-r from-primary via-accent-pink to-accent-purple rounded-2xl p-6 mb-6 shadow-lg">
             <p className="text-white text-lg mb-2">你的得分</p>
             <p className="font-display text-5xl text-white">
               {quiz.score}/{quiz.questions.length}
@@ -88,21 +145,21 @@ export default function Quiz() {
 
           <div className="flex flex-col gap-3">
             <motion.button
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 resetQuiz();
               }}
-              className="w-full py-3 bg-primary text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2"
+              className="w-full py-4 bg-gradient-to-r from-primary to-accent-pink text-white rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"
             >
               <RotateCcw size={20} />
               再来一次
             </motion.button>
             <motion.button
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate('/')}
-              className="w-full py-3 bg-gray-200 text-gray-700 rounded-xl font-bold text-lg flex items-center justify-center gap-2"
+              className="w-full py-4 bg-gray-100 text-gray-700 rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-gray-200 transition-all"
             >
               <ArrowLeft size={20} />
               返回首页
@@ -114,38 +171,42 @@ export default function Quiz() {
   }
 
   const currentQuestion = quiz.questions[quiz.currentQuestion];
-  const progress = ((quiz.currentQuestion) / quiz.questions.length) * 100;
+  const progress = ((quiz.currentQuestion + 1) / quiz.questions.length) * 100;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/20 via-secondary/20 to-accent-pink/20 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-accent-blue/20 via-primary/20 to-accent-pink/20 p-4">
       <div className="max-w-2xl mx-auto">
-        <motion.button
+        <motion.div
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/')}
-          className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-800"
+          className="mb-6"
         >
-          <ArrowLeft size={24} />
-          <span className="font-medium">返回首页</span>
-        </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05, x: -3 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 bg-white/70 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm"
+          >
+            <ArrowLeft size={24} />
+            <span className="font-medium">返回首页</span>
+          </motion.button>
+        </motion.div>
 
         <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <span className="font-bold text-gray-700">
+          <div className="flex justify-between items-center mb-3">
+            <span className="font-bold text-gray-700 bg-white/70 backdrop-blur-sm px-4 py-2 rounded-xl">
               第 {quiz.currentQuestion + 1}/{quiz.questions.length} 题
             </span>
-            <span className="font-display text-primary text-xl">
+            <span className="font-display text-2xl text-primary bg-white/70 backdrop-blur-sm px-4 py-2 rounded-xl">
               {quiz.score} 分
             </span>
           </div>
-          <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-4 bg-white/50 backdrop-blur-sm rounded-full overflow-hidden shadow-inner">
             <motion.div
-              className="h-full bg-gradient-to-r from-primary to-secondary"
+              className="h-full bg-gradient-to-r from-primary via-accent-pink to-accent-purple"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
             />
           </div>
         </div>
@@ -157,18 +218,24 @@ export default function Quiz() {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="bg-white rounded-3xl shadow-xl p-6"
+            className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-xl p-6 md:p-8 card-shadow"
           >
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-4xl">🧠</span>
-              <h2 className="font-display text-xl text-gray-800">
+            <div className="flex items-center gap-3 mb-6">
+              <motion.span
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-5xl"
+              >
+                🧠
+              </motion.span>
+              <h2 className="font-display text-xl md:text-2xl text-gray-800 leading-snug">
                 {currentQuestion.question}
               </h2>
             </div>
 
             <div className="space-y-3 mb-6">
               {currentQuestion.options.map((option, index) => {
-                let buttonStyle = 'border-gray-200 hover:border-primary';
+                let buttonStyle = 'border-gray-200 hover:border-primary hover:bg-primary/5';
                 let textStyle = 'text-gray-700';
                 
                 if (showExplanation) {
@@ -187,22 +254,34 @@ export default function Quiz() {
                 return (
                   <motion.button
                     key={index}
-                    whileHover={!showExplanation ? { scale: 1.02 } : {}}
+                    whileHover={!showExplanation ? { scale: 1.02, x: 4 } : {}}
                     whileTap={!showExplanation ? { scale: 0.98 } : {}}
                     onClick={() => handleAnswer(index)}
                     disabled={showExplanation}
-                    className={`w-full py-4 px-6 border-2 rounded-2xl text-left font-medium transition-all ${buttonStyle} ${textStyle}`}
+                    className={`w-full py-4 px-5 border-3 rounded-2xl text-left font-medium transition-all ${buttonStyle} ${textStyle} ${!showExplanation ? 'hover:shadow-md' : ''}`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center font-bold text-sm">
+                      <span className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-bold text-lg flex-shrink-0">
                         {String.fromCharCode(65 + index)}
                       </span>
-                      {option}
+                      <span className="flex-1">{option}</span>
                       {showExplanation && index === currentQuestion.correctAnswer && (
-                        <span className="ml-auto text-2xl">✅</span>
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="text-3xl"
+                        >
+                          ✅
+                        </motion.span>
                       )}
                       {showExplanation && index === selectedAnswer && index !== currentQuestion.correctAnswer && (
-                        <span className="ml-auto text-2xl">❌</span>
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="text-3xl"
+                        >
+                          ❌
+                        </motion.span>
                       )}
                     </div>
                   </motion.button>
@@ -214,10 +293,11 @@ export default function Quiz() {
               <motion.div
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className="bg-accent-yellow/30 rounded-2xl p-4 mb-4"
+                className="bg-gradient-to-r from-accent-yellow/50 to-accent-orange/30 rounded-2xl p-5 mb-5 border-2 border-accent-yellow/30"
               >
-                <p className="text-gray-700">
-                  💡 {currentQuestion.explanation}
+                <p className="text-gray-700 flex items-start gap-2">
+                  <span className="text-2xl">💡</span>
+                  <span className="font-medium">{currentQuestion.explanation}</span>
                 </p>
               </motion.div>
             )}
@@ -226,12 +306,12 @@ export default function Quiz() {
               <motion.button
                 initial={{ y: 20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleNext}
-                className="w-full py-4 bg-primary text-white rounded-2xl font-bold text-lg"
+                className="w-full py-4 bg-gradient-to-r from-primary to-accent-pink text-white rounded-2xl font-bold text-lg shadow-lg hover:shadow-xl transition-all"
               >
-                {quiz.currentQuestion === quiz.questions.length - 1 ? '查看结果' : '下一题 →'}
+                {quiz.currentQuestion === quiz.questions.length - 1 ? '查看结果 🎉' : '下一题 →'}
               </motion.button>
             )}
           </motion.div>
@@ -240,38 +320,7 @@ export default function Quiz() {
 
       <AnimatePresence>
         {showConfetti && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 pointer-events-none z-50"
-          >
-            {[...Array(20)].map((_, i) => (
-              <motion.div
-                key={i}
-                initial={{
-                  x: '50%',
-                  y: '100%',
-                  scale: 0,
-                  rotate: 0
-                }}
-                animate={{
-                  x: `${20 + Math.random() * 60}%`,
-                  y: '-20%',
-                  scale: 1,
-                  rotate: Math.random() * 360
-                }}
-                transition={{
-                  duration: 2,
-                  ease: 'easeOut'
-                }}
-                className="absolute text-4xl"
-                style={{ left: 0 }}
-              >
-                {['🎉', '🎊', '✨', '🌟', '💫'][Math.floor(Math.random() * 5)]}
-              </motion.div>
-            ))}
-          </motion.div>
+          <Confetti onComplete={() => setShowConfetti(false)} />
         )}
       </AnimatePresence>
     </div>

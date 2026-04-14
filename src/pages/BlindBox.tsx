@@ -1,7 +1,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ArrowLeft, Heart, Gift, History, X } from 'lucide-react';
 import { useAppStore } from '@/store';
 import { BlindBoxItem } from '@/types';
@@ -12,25 +12,25 @@ export default function BlindBox() {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
-  const getRarityColor = (rarity: string) => {
+  const getRarityColor = useCallback((rarity: string) => {
     switch (rarity) {
       case 'legendary': return 'from-yellow-400 to-orange-500';
-      case 'epic': return 'from-purple-400 to-pink-500';
-      case 'rare': return 'from-blue-400 to-cyan-500';
-      default: return 'from-gray-400 to-gray-500';
+      case 'epic': return 'from-purple-500 to-pink-500';
+      case 'rare': return 'from-blue-500 to-cyan-500';
+      default: return 'from-gray-400 to-slate-500';
     }
-  };
+  }, []);
 
-  const getRarityText = (rarity: string) => {
+  const getRarityText = useCallback((rarity: string) => {
     switch (rarity) {
       case 'legendary': return '传说';
       case 'epic': return '史诗';
       case 'rare': return '稀有';
       default: return '普通';
     }
-  };
+  }, []);
 
-  const getTypeEmoji = (type: string) => {
+  const getTypeEmoji = useCallback((type: string) => {
     switch (type) {
       case 'joke': return '😂';
       case 'compliment': return '💕';
@@ -38,64 +38,69 @@ export default function BlindBox() {
       case 'fortune': return '🍀';
       default: return '🎁';
     }
-  };
+  }, []);
 
-  const renderItemCard = (item: BlindBoxItem, showRemove = false) => (
+  const renderItemCard = useCallback((item: BlindBoxItem, showRemove = false) => (
     <motion.div
       key={item.id}
-      initial={{ scale: 0.9, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      className={`bg-gradient-to-br ${getRarityColor(item.rarity)} p-1 rounded-2xl`}
+      initial={{ scale: 0.9, opacity: 0, y: 20 }}
+      animate={{ scale: 1, opacity: 1, y: 0 }}
+      transition={{ type: 'spring', stiffness: 100 }}
+      className={`bg-gradient-to-br ${getRarityColor(item.rarity)} p-1.5 rounded-2xl shadow-lg`}
     >
-      <div className="bg-white rounded-xl p-4 relative">
+      <div className="bg-white rounded-xl p-5 relative">
         {showRemove && (
-          <button
+          <motion.button
+            whileHover={{ scale: 1.1, rotate: 90 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => toggleFavorite(item)}
-            className="absolute top-2 right-2 text-red-500 hover:text-red-600"
+            className="absolute top-3 right-3 text-red-500 hover:text-red-600 bg-red-50 p-1.5 rounded-full"
           >
             <X size={20} />
-          </button>
+          </motion.button>
         )}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-3xl">{item.emoji}</span>
-          <span className={`text-xs font-bold px-2 py-1 rounded-full bg-gradient-to-r ${getRarityColor(item.rarity)} text-white`}>
+        <div className="flex items-center gap-3 mb-4">
+          <span className="text-4xl">{item.emoji}</span>
+          <span className={`text-xs font-bold px-3 py-1.5 rounded-full bg-gradient-to-r ${getRarityColor(item.rarity)} text-white shadow`}>
             {getRarityText(item.rarity)}
           </span>
         </div>
-        <p className="text-gray-700">{item.content}</p>
-        <div className="mt-3 flex justify-between items-center">
-          <span className="text-2xl">{getTypeEmoji(item.type)}</span>
+        <p className="text-gray-700 text-lg leading-relaxed mb-4">{item.content}</p>
+        <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+          <span className="text-3xl">{getTypeEmoji(item.type)}</span>
           {!showRemove && (
-            <button
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               onClick={() => toggleFavorite(item)}
-              className={`p-2 rounded-full transition-colors ${
+              className={`p-3 rounded-full transition-all ${
                 blindBox.favorites.some(fav => fav.id === item.id)
-                  ? 'bg-red-100 text-red-500'
-                  : 'bg-gray-100 text-gray-400 hover:text-red-500'
+                  ? 'bg-red-100 text-red-500 shadow-md'
+                  : 'bg-gray-100 text-gray-400 hover:bg-red-50 hover:text-red-500'
               }`}
             >
               <Heart
-                size={20}
+                size={24}
                 fill={blindBox.favorites.some(fav => fav.id === item.id) ? 'currentColor' : 'none'}
               />
-            </button>
+            </motion.button>
           )}
         </div>
       </div>
     </motion.div>
-  );
+  ), [blindBox.favorites, getRarityColor, getRarityText, getTypeEmoji, toggleFavorite]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/20 via-secondary/20 to-accent-pink/20 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-accent-blue/20 via-secondary/20 to-accent-purple/20 p-4">
       <div className="max-w-2xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <motion.button
             initial={{ x: -20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.05, x: -3 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-800"
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-800 bg-white/70 backdrop-blur-sm px-4 py-2 rounded-xl shadow-sm"
           >
             <ArrowLeft size={24} />
             <span className="font-medium">返回首页</span>
@@ -103,42 +108,42 @@ export default function BlindBox() {
           
           <div className="flex gap-2">
             <motion.button
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 setShowFavorites(!showFavorites);
                 setShowHistory(false);
               }}
-              className={`p-3 rounded-xl flex items-center gap-2 ${
+              className={`p-3 rounded-xl flex items-center gap-2 transition-all ${
                 showFavorites
-                  ? 'bg-red-500 text-white'
-                  : 'bg-white text-gray-600 shadow'
+                  ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg'
+                  : 'bg-white/90 text-gray-600 shadow hover:bg-white'
               }`}
             >
               <Heart size={20} fill={showFavorites ? 'currentColor' : 'none'} />
-              <span className="hidden sm:inline">收藏</span>
+              <span className="hidden sm:inline font-medium">收藏</span>
               {blindBox.favorites.length > 0 && (
-                <span className="bg-white text-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">
+                <span className="bg-white text-red-500 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow">
                   {blindBox.favorites.length}
                 </span>
               )}
             </motion.button>
             
             <motion.button
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 setShowHistory(!showHistory);
                 setShowFavorites(false);
               }}
-              className={`p-3 rounded-xl flex items-center gap-2 ${
+              className={`p-3 rounded-xl flex items-center gap-2 transition-all ${
                 showHistory
-                  ? 'bg-primary text-white'
-                  : 'bg-white text-gray-600 shadow'
+                  ? 'bg-gradient-to-r from-primary to-accent-pink text-white shadow-lg'
+                  : 'bg-white/90 text-gray-600 shadow hover:bg-white'
               }`}
             >
               <History size={20} />
-              <span className="hidden sm:inline">历史</span>
+              <span className="hidden sm:inline font-medium">历史</span>
             </motion.button>
           </div>
         </div>
@@ -147,23 +152,33 @@ export default function BlindBox() {
           {showFavorites ? (
             <motion.div
               key="favorites"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
             >
-              <div className="bg-white rounded-3xl shadow-xl p-6 mb-4">
-                <h2 className="font-display text-2xl text-gray-800 mb-4 flex items-center gap-2">
-                  <Heart fill="currentColor" className="text-red-500" />
+              <div className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-xl p-6 md:p-8 mb-4 card-shadow">
+                <h2 className="font-display text-2xl md:text-3xl text-gray-800 mb-6 flex items-center gap-2">
+                  <Heart fill="currentColor" className="text-red-500" size={28} />
                   我的收藏
                 </h2>
                 {blindBox.favorites.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <div className="text-5xl mb-4">📦</div>
-                    <p>还没有收藏任何内容哦～</p>
+                  <div className="text-center py-16 text-gray-500">
+                    <motion.div
+                      animate={{ 
+                        scale: [1, 1.1, 1],
+                        rotate: [0, 5, -5, 0]
+                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="text-7xl mb-4"
+                    >
+                      📦
+                    </motion.div>
+                    <p className="text-lg mb-2">还没有收藏任何内容哦～</p>
                     <p className="text-sm">快去开盲盒吧！</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     {blindBox.favorites.map(item => renderItemCard(item, true))}
                   </div>
                 )}
@@ -172,22 +187,32 @@ export default function BlindBox() {
           ) : showHistory ? (
             <motion.div
               key="history"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
             >
-              <div className="bg-white rounded-3xl shadow-xl p-6 mb-4">
-                <h2 className="font-display text-2xl text-gray-800 mb-4 flex items-center gap-2">
-                  <History />
+              <div className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-xl p-6 md:p-8 mb-4 card-shadow">
+                <h2 className="font-display text-2xl md:text-3xl text-gray-800 mb-6 flex items-center gap-2">
+                  <History size={28} />
                   开箱历史
                 </h2>
                 {blindBox.history.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <div className="text-5xl mb-4">🎁</div>
-                    <p>还没有开箱记录哦～</p>
+                  <div className="text-center py-16 text-gray-500">
+                    <motion.div
+                      animate={{ 
+                        scale: [1, 1.1, 1],
+                        rotate: [0, 5, -5, 0]
+                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="text-7xl mb-4"
+                    >
+                      🎁
+                    </motion.div>
+                    <p className="text-lg mb-2">还没有开箱记录哦～</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     {blindBox.history.map(item => renderItemCard(item))}
                   </div>
                 )}
@@ -201,11 +226,11 @@ export default function BlindBox() {
               exit={{ opacity: 0 }}
               className="text-center"
             >
-              <div className="bg-white rounded-3xl shadow-xl p-8 mb-6">
-                <h1 className="font-display text-3xl text-gray-800 mb-2">
+              <div className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-xl p-8 md:p-10 mb-6 card-shadow">
+                <h1 className="font-display text-3xl md:text-4xl text-gray-800 mb-3">
                   校园盲盒
                 </h1>
-                <p className="text-gray-600 mb-8">
+                <p className="text-gray-600 text-lg mb-10">
                   点击盲盒，开启你的惊喜！🎁
                 </p>
 
@@ -213,30 +238,30 @@ export default function BlindBox() {
                   {blindBox.currentItem ? (
                     <motion.div
                       key="item"
-                      initial={{ scale: 0, rotate: -180 }}
-                      animate={{ scale: 1, rotate: 0 }}
+                      initial={{ scale: 0, rotate: -180, y: 50 }}
+                      animate={{ scale: 1, rotate: 0, y: 0 }}
                       transition={{ type: 'spring', stiffness: 200, damping: 15 }}
                     >
                       {renderItemCard(blindBox.currentItem)}
-                      <div className="mt-6 flex gap-3 justify-center">
+                      <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
                         <motion.button
-                          whileHover={{ scale: 1.05 }}
+                          whileHover={{ scale: 1.05, y: -2 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={clearCurrentItem}
-                          className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold"
+                          className="px-6 py-4 bg-gray-100 text-gray-700 rounded-2xl font-bold text-lg hover:bg-gray-200 transition-all shadow"
                         >
                           放回
                         </motion.button>
                         <motion.button
-                          whileHover={{ scale: 1.05 }}
+                          whileHover={{ scale: 1.05, y: -2 }}
                           whileTap={{ scale: 0.95 }}
                           onClick={() => {
                             clearCurrentItem();
                             openBlindBox();
                           }}
-                          className="px-6 py-3 bg-primary text-white rounded-xl font-bold flex items-center gap-2"
+                          className="px-6 py-4 bg-gradient-to-r from-primary to-accent-pink text-white rounded-2xl font-bold text-lg flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"
                         >
-                          <Gift size={20} />
+                          <Gift size={22} />
                           再开一个
                         </motion.button>
                       </div>
@@ -244,42 +269,42 @@ export default function BlindBox() {
                   ) : (
                     <motion.div
                       key="box"
-                      className="flex justify-center"
+                      className="flex justify-center items-center py-8"
                     >
                       <motion.button
-                        whileHover={!blindBox.isOpening ? { scale: 1.1 } : {}}
-                        whileTap={!blindBox.isOpening ? { scale: 0.95 } : {}}
+                        whileHover={!blindBox.isOpening ? { scale: 1.15, rotate: 5 } : {}}
+                        whileTap={!blindBox.isOpening ? { scale: 0.9 } : {}}
                         onClick={openBlindBox}
                         disabled={blindBox.isOpening}
-                        className="relative"
+                        className="relative group"
                       >
                         <motion.div
                           animate={blindBox.isOpening ? {
-                            rotate: [0, 10, -10, 10, -10, 0],
-                            scale: [1, 1.1, 1, 1.1, 1]
+                            rotate: [0, 15, -15, 15, -15, 0],
+                            scale: [1, 1.15, 1, 1.15, 1]
                           } : {
-                            y: [0, -10, 0],
-                            rotate: [0, 2, -2, 0]
+                            y: [0, -15, 0],
+                            rotate: [0, 3, -3, 0]
                           }}
                           transition={blindBox.isOpening ? {
-                            duration: 0.8,
+                            duration: 0.7,
                             repeat: Infinity
                           } : {
-                            duration: 2,
+                            duration: 2.5,
                             repeat: Infinity,
-                            ease: 'easeInOut'
+                            ease: "easeInOut" as const
                           }}
-                          className="text-9xl"
+                          className="text-9xl md:text-[12rem] cursor-pointer drop-shadow-2xl group-hover:drop-shadow-[0_0_30px_rgba(255,107,107,0.5)] transition-all"
                         >
                           🎁
                         </motion.div>
                         {blindBox.isOpening && (
                           <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="absolute inset-0 flex items-center justify-center"
+                            initial={{ opacity: 0, scale: 0 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="absolute inset-0 flex items-center justify-center pointer-events-none"
                           >
-                            <div className="text-6xl animate-spin">✨</div>
+                            <div className="text-7xl animate-spin">✨</div>
                           </motion.div>
                         )}
                       </motion.button>
@@ -292,14 +317,14 @@ export default function BlindBox() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5 }}
-                    className="mt-8 text-gray-500"
+                    className="mt-8 text-gray-500 text-lg"
                   >
                     点击盲盒开启惊喜！
                   </motion.p>
                 )}
               </div>
 
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 {[
                   { emoji: '😂', text: '笑话' },
                   { emoji: '💕', text: '赞美' },
@@ -311,10 +336,11 @@ export default function BlindBox() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 * i }}
-                    className="bg-white rounded-2xl p-4 shadow text-center"
+                    whileHover={{ y: -5, scale: 1.05 }}
+                    className="bg-white/90 backdrop-blur-lg rounded-2xl p-5 shadow-lg card-shadow"
                   >
-                    <div className="text-3xl mb-1">{item.emoji}</div>
-                    <p className="text-sm text-gray-600">{item.text}</p>
+                    <div className="text-4xl mb-2">{item.emoji}</div>
+                    <p className="text-gray-700 font-medium">{item.text}</p>
                   </motion.div>
                 ))}
               </div>
