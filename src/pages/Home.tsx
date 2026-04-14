@@ -46,24 +46,24 @@ export default function Home() {
     {
       title: '趣味答题',
       emoji: '🧠',
-      description: '挑战各种有趣题目，测试你的知识储备！',
-      color: 'from-accent-pink to-primary',
+      description: '挑战校园题目，赢取积分！',
+      color: 'from-primary to-accent-blue',
       bgColor: 'bg-gradient-to-br',
       path: '/quiz'
     },
     {
       title: '校园盲盒',
       emoji: '🎁',
-      description: '神秘惊喜，每次打开都有不同的快乐！',
-      color: 'from-secondary to-accent-blue',
+      description: '每日免费开盒，惊喜不断！',
+      color: 'from-secondary to-accent-pink',
       bgColor: 'bg-gradient-to-br',
       path: '/blindbox'
     },
     {
-      title: '好友默契',
+      title: '默契测试',
       emoji: '💕',
-      description: '测试你和好友的默契程度，增进友谊！',
-      color: 'from-accent-purple to-accent-pink',
+      description: '邀请好友，测试默契度！',
+      color: 'from-accent-yellow to-secondary',
       bgColor: 'bg-gradient-to-br',
       path: '/chemistry'
     }
@@ -74,7 +74,7 @@ export default function Home() {
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.15
+        staggerChildren: 0.1
       }
     }
   };
@@ -85,7 +85,7 @@ export default function Home() {
       y: 0,
       opacity: 1,
       transition: {
-        duration: 0.6,
+        duration: 0.5,
         ease: "easeOut" as const
       }
     }
@@ -93,7 +93,7 @@ export default function Home() {
 
   if (showNicknameInput) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-accent-blue/20 via-primary/20 to-accent-purple/20 flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="min-h-screen bg-gradient-to-br from-accent-blue/20 via-primary/20 to-secondary/20 flex items-center justify-center p-4 relative overflow-hidden">
         <FloatingEmoji emoji="✨" delay={0} x="10%" y="20%" />
         <FloatingEmoji emoji="🌟" delay={0.5} x="85%" y="15%" />
         <FloatingEmoji emoji="🎈" delay={1} x="15%" y="75%" />
@@ -103,7 +103,7 @@ export default function Home() {
           initial={{ scale: 0.85, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           transition={{ type: 'spring', stiffness: 100 }}
-          className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl p-8 max-w-md w-full relative z-10"
+          className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl p-8 max-w-md w-full relative z-10"
         >
           <div className="text-center mb-8">
             <motion.div
@@ -132,7 +132,7 @@ export default function Home() {
               value={inputName}
               onChange={(e) => setInputName(e.target.value)}
               placeholder="输入你的昵称..."
-              className="w-full px-5 py-4 rounded-2xl border-3 border-gray-100 focus:border-primary focus:outline-none text-lg transition-all bg-gray-50 focus:bg-white shadow-sm"
+              className="w-full px-6 py-4 rounded-2xl border-3 border-gray-100 focus:border-primary focus:outline-none text-lg transition-all bg-gray-50 focus:bg-white shadow-sm"
               onKeyPress={(e) => e.key === 'Enter' && handleSetNickname()}
               autoFocus
             />
@@ -141,7 +141,7 @@ export default function Home() {
               whileTap={{ scale: 0.95 }}
               onClick={handleSetNickname}
               disabled={!inputName.trim()}
-              className="w-full py-4 bg-gradient-to-r from-primary to-accent-pink text-white rounded-2xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all"
+              className="w-full py-5 bg-gradient-to-r from-primary to-secondary text-white rounded-2xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all"
             >
               开始玩耍！🚀
             </motion.button>
@@ -152,7 +152,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-accent-blue/20 via-primary/20 to-accent-purple/20 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-accent-blue/20 via-primary/20 to-secondary/20 relative overflow-hidden">
       <FloatingEmoji emoji="☁️" delay={0} x="5%" y="10%" />
       <FloatingEmoji emoji="🌈" delay={0.8} x="75%" y="8%" />
       <FloatingEmoji emoji="🌸" delay={1.6} x="12%" y="85%" />
@@ -164,7 +164,7 @@ export default function Home() {
           initial={{ y: -30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" as const }}
-          className="text-center mb-10 md:mb-16"
+          className="text-center mb-8 md:mb-12"
         >
           <motion.div
             animate={{ 
@@ -187,43 +187,6 @@ export default function Home() {
         </motion.div>
 
         <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="bg-white/90 backdrop-blur-lg rounded-3xl shadow-xl p-6 md:p-8 mb-10 md:mb-14 max-w-2xl mx-auto card-shadow"
-        >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center space-x-5">
-              <motion.span
-                animate={{ 
-                  y: [0, -8, 0],
-                  rotate: [0, 5, -5, 0]
-                }}
-                transition={{
-                  duration: 2.5,
-                  repeat: Infinity,
-                  ease: "easeInOut" as const
-                }}
-                className="text-6xl"
-              >
-                {luckyInfo.emoji}
-              </motion.span>
-              <div className="text-left">
-                <p className="text-gray-500 text-sm mb-1">今日幸运值</p>
-                <p className="font-display text-4xl bg-gradient-to-r from-primary to-accent-purple bg-clip-text text-transparent">
-                  {luckyInfo.value}%
-                </p>
-              </div>
-            </div>
-            <div className="text-center md:text-right flex-1">
-              <p className="font-bold text-gray-800 text-lg leading-tight">
-                {luckyInfo.text}
-              </p>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
@@ -233,24 +196,24 @@ export default function Home() {
             <motion.div
               key={feature.path}
               variants={itemVariants}
-              whileHover={{ y: -12, scale: 1.02 }}
+              whileHover={{ y: -12, scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={() => navigate(feature.path)}
-              className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-lg p-7 md:p-8 cursor-pointer transition-all hover:shadow-2xl card-shadow group"
+              className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-lg p-8 md:p-10 cursor-pointer transition-all hover:shadow-2xl card-shadow group"
             >
-              <div className={`${feature.bgColor} ${feature.color} w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center text-4xl md:text-5xl mb-5 mx-auto shadow-lg group-hover:shadow-xl transition-all group-hover:scale-110`}>
+              <div className={`${feature.bgColor} ${feature.color} w-24 h-24 md:w-28 md:h-28 rounded-2xl flex items-center justify-center text-5xl md:text-6xl mb-6 mx-auto shadow-lg group-hover:shadow-xl transition-all group-hover:scale-110`}>
                 {feature.emoji}
               </div>
-              <h2 className="font-display text-2xl md:text-3xl text-center text-gray-800 mb-3">
+              <h2 className="font-display text-2xl md:text-3xl text-center text-gray-800 mb-4">
                 {feature.title}
               </h2>
-              <p className="text-gray-600 text-center text-sm md:text-base leading-relaxed">
+              <p className="text-gray-600 text-center text-sm md:text-base leading-relaxed mb-6">
                 {feature.description}
               </p>
               <motion.div
                 initial={{ width: 0 }}
                 whileHover={{ width: '100%' }}
-                className="h-1 bg-gradient-to-r from-primary to-accent-purple mx-auto mt-5 rounded-full"
+                className="h-1 bg-gradient-to-r from-primary to-secondary mx-auto mt-4 rounded-full"
               />
             </motion.div>
           ))}

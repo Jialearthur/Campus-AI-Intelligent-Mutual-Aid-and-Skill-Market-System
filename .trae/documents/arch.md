@@ -7,6 +7,7 @@ graph TB
         Utils["工具函数"]
         State["状态管理 (Zustand)"]
         Animations["动画效果"]
+        Performance["性能优化"]
     end
     
     subgraph Data["数据层"]
@@ -20,6 +21,8 @@ graph TB
     Components --&gt; Utils
     State --&gt; LocalStorage
     Utils --&gt; MockData
+    Pages --&gt; Performance
+    Components --&gt; Performance
 ```
 
 ## 2. Technology Description
@@ -167,6 +170,12 @@ interface ChemistryResult {
 - 计算击败人数百分比
 - 生成专属评语
 
+### 5.6 性能优化模块
+- 代码分割和懒加载
+- 动画性能优化
+- 页面加载速度优化
+- 交互响应优化
+
 ## 6. Mock Data
 
 ### 6.1 趣味答题题目示例
@@ -260,23 +269,15 @@ const mockBlindBoxItems: BlindBoxItem[] = [
 ### 6.3 排行榜数据示例
 ```typescript
 const mockLeaderboard: LeaderboardEntry[] = [
-  {
-    id: '1',
-    nickname: '学霸一号',
-    积分: 1250,
-    rank: 1
-  },
-  {
-    id: '2',
-    nickname: '答题小能手',
-    积分: 980,
-    rank: 2
-  },
-  {
-    id: '3',
-    nickname: '校园达人',
-    积分: 850,
-    rank: 3
-  }
+  { id: '1', nickname: '学霸一号', 积分: 1250, rank: 1 },
+  { id: '2', nickname: '答题小能手', 积分: 980, rank: 2 },
+  { id: '3', nickname: '校园达人', 积分: 850, rank: 3 },
+  { id: '4', nickname: '知识渊博', 积分: 720, rank: 4 },
+  { id: '5', nickname: '答题王者', 积分: 650, rank: 5 },
+  { id: '6', nickname: '校园学霸', 积分: 580, rank: 6 },
+  { id: '7', nickname: '聪明伶俐', 积分: 520, rank: 7 },
+  { id: '8', nickname: '答题高手', 积分: 480, rank: 8 },
+  { id: '9', nickname: '知识储备', 积分: 420, rank: 9 },
+  { id: '10', nickname: '学习委员', 积分: 380, rank: 10 }
 ];
 ```

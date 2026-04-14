@@ -67,19 +67,21 @@ export default function Quiz() {
     setSelectedAnswer(index);
     setShowExplanation(true);
     
+    // 实时提交答案，确保积分实时到账
+    answerQuestion(index);
+    
     const currentQ = quiz.questions[quiz.currentQuestion];
     if (index === currentQ.correctAnswer) {
       setShowConfetti(true);
     }
-  }, [selectedAnswer, quiz.questions, quiz.currentQuestion]);
+  }, [selectedAnswer, quiz.questions, quiz.currentQuestion, answerQuestion]);
 
   const handleNext = useCallback(() => {
     if (selectedAnswer !== null) {
-      answerQuestion(selectedAnswer);
       setSelectedAnswer(null);
       setShowExplanation(false);
     }
-  }, [selectedAnswer, answerQuestion]);
+  }, [selectedAnswer]);
 
   const getResultMessage = () => {
     const percentage = (quiz.score / quiz.questions.length) * 100;

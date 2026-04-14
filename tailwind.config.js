@@ -9,15 +9,14 @@ export default {
     },
     extend: {
       colors: {
-        primary: "#FF6B6B",
-        secondary: "#4ECDC4",
+        primary: "#60A5FA", // 浅蓝
+        secondary: "#FFB6C1", // 浅粉
         accent: {
-          yellow: "#FFE66D",
-          pink: "#FF85A2",
-          purple: "#A855F7",
-          blue: "#60A5FA",
-          green: "#34D399",
-          orange: "#FB923C"
+          yellow: "#FFF9C4", // 鹅黄
+          pink: "#FFC0CB",
+          blue: "#B3E5FC",
+          green: "#C8E6C9",
+          orange: "#FFE0B2"
         },
       },
       fontFamily: {
